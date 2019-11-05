@@ -20,10 +20,9 @@ with open("input.csv", "r") as f:
     poi = []
     reader = csv.DictReader(f)  # The CSV file would be analyzed by using "DictReader" function
     for row in reader:
-        point = [0, 0, 0]
+        point = [0, 0]
         point[0] = float(row["x"])
         point[1] = float(row["y"])
-        point[2] = row["id"]
         poi.append(point)
         x_point.append(float(row["x"]))
         y_point.append(float(row["y"]))
@@ -32,6 +31,7 @@ with open("input.csv", "r") as f:
 point_outside = []
 point_boundary = []
 point_inside = []
+poi_extra = []
 
 
 max_x = max(x_polygon)
@@ -53,7 +53,7 @@ for point in poi:
                 if point1[0] < point[0] < point2[0] or point2[0] < point[0] < point1[0]:
                     point_boundary.append(point)
                     break
-            if (point1[1] < point[1] <= point2[1]) or (point2[1] < point[1] <= point1[1]):
+            if (point1[1] < point[1] and point2[1] >= point[1]) or (point1[1] >= point[1] and point2[1] < point[1]):
                 point12lng = point2[0] - (point2[1] - point[1]) * (point2[0] - point1[0]) / (point2[1] - point1[1])
                 if point12lng == point[0]:
                     point_boundary.append(point)
@@ -61,23 +61,10 @@ for point in poi:
                 if point12lng > point[0]:
                     counting += 1
             point1 = point2
-        if point not in point_boundary:
-            if counting % 2 == 0:
-                point_outside.append(point)
-            else:
-                point_inside.append(point)
-
-with open("output.csv", "w", newline="") as f:
-    writer = csv.writer(f)
-    writer.writerow(["id", "category"])
-    for point in poi:
-        if point in point_boundary:
-            writer.writerow([point[2], "boundary"])
-        if point in point_outside:
-            writer.writerow([point[2], "outside"])
-        if point in point_inside:
-            writer.writerow([point[2], "inside"])
-
+        if counting % 2 == 0:
+            point_outside.append(point)
+        else:
+            point_inside.append(point)
 
 
 
@@ -86,20 +73,19 @@ with open("output.csv", "w", newline="") as f:
 
 x_outside_list = []
 y_outside_list = []
-for i in range(len(point_outside)):
+for i in range(len(point_outside)-1):
     x_outside_list.append(point_outside[i][0])
     y_outside_list.append(point_outside[i][1])
 x_boundary_list = []
 y_boundary_list = []
-for i in range(len(point_boundary)):
+for i in range(len(point_boundary)-1):
     x_boundary_list.append(point_boundary[i][0])
     y_boundary_list.append(point_boundary[i][1])
 x_inside_list = []
 y_inside_list = []
-for i in range(len(point_inside)):
+for i in range(len(point_inside)-1):
     x_inside_list.append(point_inside[i][0])
     y_inside_list.append(point_inside[i][1])
-
 
 
 
