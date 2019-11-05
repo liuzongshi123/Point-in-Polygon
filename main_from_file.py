@@ -2,95 +2,48 @@ from collections import OrderedDict
 import matplotlib
 import matplotlib.pyplot as plt
 import csv
+
 matplotlib.use('TkAgg')
 
 
-class Geometry:
-    def __init__(self, name):
+class Point:
+    def __init__(self, x, y, id_num=""):
+        self.x = x
+        self.y = y
+        self.id_num = id_num
+
+
+class Data:
+    def __init__(self, name=""):
         self.__name = name
 
-    def get_name(self):
-        return self.__name
-
-
-class Point(Geometry):
-    x = ""
-    y = ""
-    id_unm = ""
-
-    def __init__(self, name, x, y, id_num):
-        super().__init__(name)
-        self.__x = x
-        self.__y = y
-        self.__id_num = id_num
-
-    def get_x(self):
-        return self.__x
-
-    def get_y(self):
-        return self.__y
-
-    def get_id_num(self):
-        return self.__id_num
-
-
-class Pointset(Point):
-    pointlist = []
-    polylist = []
-    point_outside = []
-    point_boundary = []
-    point_inside = []
-
-    def __init__(self, name, pointlist, polylist, point_outside, point_inside, point_boundary):
-        super().__init__(name)
-        self.__pointlist = pointlist
-        self.__polylist = polylist
-        self.__point_outside = point_outside
-        self.__point_inside = point_inside
-        self.__point_boundary = point_boundary
-
-    def get_pointlist(self):
-        return self.__pointlist
-
-    def get_polylist(self):
-        return self.__polylist
-
-    def get_point_outside(self):
-        return self.__point_outside
-
-    def get_point_inside(self):
-        return self.__point_inside
-
-    def get_point_boundary(self):
-        return self.__point_boundary
-
-    def read_input(self):
-        with open("input.csv", "r") as f:  # Read input.csv file by using "DictReader" function
+    def read_input(self, filename=""):
+        pointlist = []
+        with open(filename, "r") as f:  # Read input.csv file by using "DictReader" function
             reader = csv.DictReader(f)
             for row in reader:
                 x = float(row["x"])
                 y = float(row["y"])
                 id_num = row["id"]
                 point = Point(x, y, id_num)
-                self.__pointlist.append(point)
-        return self.get_pointlist()
+                pointlist.append(point)
+        return pointlist
 
-    def read_polygon(self):
-        with open("polygon.csv", "r") as f:  # Read polygon.csv file by using "DictReader" function
+    def read_polygon(self, filename=""):
+        polylist = []
+        with open(filename, "r") as f:  # Read polygon.csv file by using "DictReader" function
             reader = csv.DictReader(f)
             for row in reader:
                 x = float(row["x"])
                 y = float(row["y"])
                 point = Point(x, y)
-                self.__polylist.append(point)
-            return self.get_polylist()
+                polylist.append(point)
+            return polylist
 
 
-class Classification(Pointset):
-    def __init__(self, name, points):
-        super().__init__(name)
-
-    def get_mbr(points):
+class Classification:
+    def get_mbr(self, points):
+        points = Data().read_polygon("polygon.csv")
         length = len(points)
         top = down = left = right = points[0]
         for i in range(1, length):
@@ -113,29 +66,29 @@ class Classification(Pointset):
         mbr = [point0, point1, point2, point3]
         return mbr
 
-    def is_point_in_mbr(point, mbr):
+    def is_point_in_mbr(self, point, mbr):
         if mbr[3].x <= point.x <= mbr[0].x and mbr[3].y <= point.y <= mbr[2].y:
             return True
         else:
             return False
 
-    def is_point_in_polygon(pointlist, polylist):
+    def piptest(self, pointlist, polylist, category=None):
         point_outside = []
-        point_boundary = []
         point_inside = []
+        point_boundary = []
         for points in polylist:
-            mbr = get_mbr(points)
+            mbr = Classification().get_mbr(points)
             for point in pointlist:
-                if not is_point_in_mbr(point, mbr):
+                if not Classification().is_point_in_mbr(point, mbr):
                     point_outside.append(point)
                     continue
 
-                length = len(points)
+                length = len(polylist)
                 p = point
-                p1 = points[0]
+                p1 = polylist[0]
                 counting = 0
                 for i in range(1, length):
-                    p2 = points[i]
+                    p2 = polylist[i]
                     if (p.x == p1.x and p.y == p1.y) or (p.x == p2.x and p.y == p2.y):
                         point_boundary.append(p)
                         break
@@ -156,7 +109,12 @@ class Classification(Pointset):
                         point_outside.append(p)
                     else:
                         point_inside.append(p)
-        return point_outside, point_boundary, point_inside
+        if category == "outside":
+            return point_outside
+        if category == "inside":
+            return point_inside
+        if category == "boundary":
+            return point_boundary
 
 
 class Plotter:
@@ -186,38 +144,46 @@ class Plotter:
 
 def main():
     plotter = Plotter()
-    Pointset.read_polygon()
+    data = Data()
+    polygonset = data.read_polygon("polygon.csv")
+    pointset = data.read_input("input.csv")
+    categorize_points = Classification()
+    piptest = categorize_points.piptest(pointset, polygonset)
+    outside = categorize_points.piptest(pointset, polygonset, "outside")
+    inside = categorize_points.piptest(pointset, polygonset, "inside")
+    boundary = categorize_points.piptest(pointset, polygonset, "boundary")
+    polygonset
     print("read polygon.csv")
-    Pointset.read_input()
+    pointset
     print("read input.csv")
-    Classification.is_point_in_polygon(pointlist, polylist)
+    piptest
     print("categorize points")
 
     print("write output.csv")
     x_polygon = []
     y_polygon = []
-    for point in Pointset.polylist:
+    for point in polygonset:
         x_polygon.append(point.x)
         y_polygon.append(point.y)
     plotter.add_polygon(x_polygon, y_polygon)
 
     x_outside_list = []
     y_outside_list = []
-    for point in Pointset.point_outside:
+    for point in outside:
         x_outside_list.append(point.x)
         y_outside_list.append(point.y)
     plotter.add_point(x_outside_list, y_outside_list, "outside")
 
     x_inside_list = []
     y_inside_list = []
-    for point in Pointset.point_inside:
+    for point in inside:
         x_inside_list.append(point.x)
         y_inside_list.append(point.y)
     plotter.add_point(x_inside_list, y_inside_list, "inside")
 
     x_boundary_list = []
     y_boundary_list = []
-    for point in Pointset.point_boundary:
+    for point in boundary:
         x_boundary_list.append(point.x)
         y_boundary_list.append(point.y)
     plotter.add_point(x_boundary_list, y_boundary_list, "boundary")
