@@ -11,16 +11,20 @@ class Geometry:
 
 
 class Point(Geometry):
-    def __init__(self, name, x, y):
+    def __init__(self, name, x, y, category=None):
         super().__init__(name)
         self.__x = x
         self.__y = y
+        self.__category = category
 
     def get_x(self):
         return self.__x
 
     def get_y(self):
         return self.__y
+
+    def get_category(self):
+        return self.__category
 
 
 class Line(Geometry):
@@ -82,14 +86,12 @@ class Judgement:
         else:
             return False
 
-    def pip_test(self, pointlist, polylist, category=""):
-        point_outside = []
-        point_inside = []
-        point_boundary = []
+    def pip_test(self, pointlist, polylist):
         mbr = MBR("polygon", polylist).get_mbr()
+        pointlist_aftertest = []
         for point in pointlist:
             if not self.is_point_in_mbr(point, mbr):
-                point_outside.append(point)
+                point.category = "outside"
                 continue
             lines = Polygon("polygonlines", polylist).lines()
             p_x = point.get_x()
@@ -101,40 +103,27 @@ class Judgement:
                 p2_x = line.point_2.get_x()
                 p2_y = line.point_2.get_y()
                 if (p_x == p1_x and p_y == p1_y) or (p_x == p2_x and p_y == p2_y):
-                    point_boundary.append(point)
+                    point.category = "boundary"
                     break
                 if p1_y == p_y == p2_y:
                     if (p1_x < p_x < p2_x) or (p2_x < p_x < p1_x):
-                        point_boundary.append(point)
+                        point.category = "boundary"
                         break
                 if (p1_y < p_y <= p2_y) or (p2_y < p_y <= p1_y):
                     x = p2_x - (p2_y - p_y) * \
                         (p2_x - p1_x) / (p2_y - p1_y)
                     if x == p_x:
-                        point_boundary.append(point)
+                        point.category = "boundary"
                         break
                     if x > p_x:
                         counting += 1
-            if point not in point_boundary:
+            if point.get_category() != "boundary":
                 if counting % 2 == 0:
-                    point_outside.append(point)
+                    point.category = "outside"
                 else:
-                    point_inside.append(point)
-        if category == "outside":
-            return point_outside
-        if category == "inside":
-            return point_inside
-        if category == "boundary":
-            return point_boundary
-
-    def classification(self, name=""):
-        point_list = []
-        point_set = File().read_file("input.csv")
-        polygon_set = File().read_file("polygon.csv")
-        points = self.pip_test(point_set, polygon_set, name)
-        for point in points:
-            point_list.append(point)
-        return point_list
+                    point.category = "inside"
+            pointlist_aftertest.append(point)
+        return pointlist_aftertest
 
 
 class File:
@@ -154,63 +143,62 @@ class File:
         return pointlist
 
     def write_file(self, filename=""):
-        point_set = File().read_file("input.csv")
-        outside = Judgement().classification("outside")
-        inside = Judgement().classification("inside")
-        boundary = Judgement().classification("boundary")
+        point_set = self.read_file("input.csv")
+        polygon_set = self.read_file("polygon.csv")
         with open(filename, "w", newline="") as f:
             writer = csv.writer(f)
             writer.writerow(["id", "category"])
-            for point in point_set:
-                if point in outside:
+            for point in Judgement().pip_test(point_set, polygon_set):
+                if point.get_category() == "outside":
                     writer.writerow([point.get_name(), "outside"])
-                if point in inside:
+                if point.get_category() == "inside":
                     writer.writerow([point.get_name(), "inside"])
-                if point in boundary:
+                if point.get_category() == "boundary":
                     writer.writerow([point.get_name(), "boundary"])
 
 
 def main():
     plotter = Plotter()
-    outside = Judgement().classification("outside")
-    inside = Judgement().classification("inside")
-    boundary = Judgement().classification("boundary")
+    file = File()
+    judgement = Judgement()
+    polygon_set = file.read_file("polygon.csv")
+    point_set = file.read_file("input.csv")
+    write_file = file.write_file("output.csv")
     print("read polygon.csv")
-
     print("read input.csv")
-
+    sb = judgement.pip_test(point_set, polygon_set)
     print("categorize points")
-    File().write_file("output.csv")
+    write_file
     print("write output.csv")
     x_polygon = []
     y_polygon = []
-    for point in File().read_file("polygon.csv"):
+    for point in polygon_set:
         x_polygon.append(point.get_x())
         y_polygon.append(point.get_y())
     plotter.add_polygon(x_polygon, y_polygon)
-
     x_outside_list = []
     y_outside_list = []
-    for point in outside:
-        x_outside_list.append(point.get_x())
-        y_outside_list.append(point.get_y())
-    plotter.add_point(x_outside_list, y_outside_list, "outside")
-
     x_inside_list = []
     y_inside_list = []
-    for point in inside:
-        x_inside_list.append(point.get_x())
-        y_inside_list.append(point.get_y())
-    plotter.add_point(x_inside_list, y_inside_list, "inside")
-
     x_boundary_list = []
     y_boundary_list = []
-    for point in boundary:
-        x_boundary_list.append(point.get_x())
-        y_boundary_list.append(point.get_y())
+    for point in sb:
+        if point.get_category() == "outside":
+            x_outside_list.append(point.get_x())
+            y_outside_list.append(point.get_y())
+        if point.get_category() == "inside":
+            x_inside_list.append(point.get_x())
+            y_inside_list.append(point.get_y())
+        if point.get_category() == "boundary":
+            x_inside_list.append(point.get_x())
+            y_inside_list.append(point.get_y())
+    plotter.add_point(x_outside_list, y_outside_list, "outside")
+    plotter.add_point(x_inside_list, y_inside_list, "inside")
     plotter.add_point(x_boundary_list, y_boundary_list, "boundary")
     print("plot polygon and points")
     plotter.show()
+    sb[0].category = "123"
+    print(sb[0].get_category())
 
 
 if __name__ == "__main__":
