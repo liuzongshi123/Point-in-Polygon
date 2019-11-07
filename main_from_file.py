@@ -1,3 +1,4 @@
+import os
 import csv
 from plotter import Plotter
 
@@ -57,9 +58,11 @@ class Polygon(Geometry):
 
 
 class MBR(Polygon):
+    # The Minimum Bounding Rectangle Algorithm.
     def __init__(self, name, polylist):
         length = len(polylist)
         top = down = left = right = polylist[0]
+        # Get four vertices of the MBR.
         for i in range(1, length):
             if polylist[i].get_x() > top.get_x():
                 top = polylist[i]
@@ -81,7 +84,9 @@ class MBR(Polygon):
         return mbr
 
 
+# The Point-in-Polygon Algorithm.
 class Judgement:
+    # Determine whether the point is inside the MBR.
     def is_point_in_mbr(self, point, mbr):
         if mbr[3].get_x() <= point.get_x() <= mbr[0].get_x() and \
                 mbr[3].get_y() <= point.get_y() <= mbr[2].get_y():
@@ -89,14 +94,18 @@ class Judgement:
         else:
             return False
 
+    # Determine whether the point set is inside the polygon.
+    # Return a point set that each point have "category" attribute.
     def pip_test(self, pointlist, polylist):
         mbr = MBR("polygon", polylist).get_mbr()
         pointlist_aftertest = []
         for point in pointlist:
+            # Determine whether the point is inside the MBR.
             if not self.is_point_in_mbr(point, mbr):
                 point.define_category("outside")
                 pointlist_aftertest.append(point)
                 continue
+            # The Ray Casting Algorithm.
             lines = Polygon("polygonlines", polylist).lines()
             p_x = point.get_x()
             p_y = point.get_y()
@@ -106,21 +115,27 @@ class Judgement:
                 p1_y = line.point_1.get_y()
                 p2_x = line.point_2.get_x()
                 p2_y = line.point_2.get_y()
+                # Point coincides with the vertices of the polygon.
                 if (p_x == p1_x and p_y == p1_y) or (p_x == p2_x and p_y == p2_y):
                     point.define_category("boundary")
                     break
+                # Point is on the boundaries that are parallel with X axis.
                 if p1_y == p_y == p2_y:
                     if (p1_x < p_x < p2_x) or (p2_x < p_x < p1_x):
                         point.define_category("boundary")
                         break
+                # Determine whether the end points of the line segment are on either side of the ray.
                 if (p1_y < p_y <= p2_y) or (p2_y < p_y <= p1_y):
-                    x = p2_x - (p2_y - p_y) * \
-                        (p2_x - p1_x) / (p2_y - p1_y)
+                    # The x-coordinate of a point on a line segment that has same y-coordinate with the ray.
+                    x = p2_x - (p2_y - p_y) * (p2_x - p1_x) / (p2_y - p1_y)
+                    # Point is on the boundary of the polygon.
                     if x == p_x:
                         point.define_category("boundary")
                         break
+                    # The ray pass through the boundary of the polygon.
                     if x > p_x:
                         counting += 1
+            # Determine whether the number of intersections is even.
             if point.get_category() != "boundary":
                 if counting % 2 == 0:
                     point.define_category("outside")
@@ -131,32 +146,35 @@ class Judgement:
 
 
 class File:
+    # Read file and return point set.
+    # Pass file path and file name as arguments to the function.
     def read_file(self, filepath, filename):
-        pointlist = []
-        with open(filepath + "/" + filename, "r") as f:  # Read file by using "DictReader" function
-            reader = csv.DictReader(f)
-            for row in reader:
-                x = float(row["x"])
-                y = float(row["y"])
-                id_num = row["id"]
-                point = Point(id_num, x, y)
-                pointlist.append(point)
+        with open(filepath + "/" + filename, "r") as f:
+            pointlist = []
+            for i in f.readlines()[1:]:
+                point = i.split(",")
+                id = point[0]
+                x = float(point[1])
+                y = float(point[2])
+                point1 = Point(id, x, y)
+                pointlist.append(point1)
         return pointlist
 
-    def write_file(self, point_set, polygon_set, filepath, filename):
-        with open(filepath + "/" + filename, "w", newline="") as f:
-            writer = csv.writer(f)
-            writer.writerow(["id", "category"])
-            for point in Judgement().pip_test(point_set, polygon_set):
+    # Write output file by pass file path and output name as arguments to the function.
+    def write_file(self, points_aftertest, filepath, outputname):
+        with open(filepath + "/" + outputname, "w", newline="") as f:
+            f.write("id" + "," + "category" + "\n")
+            for point in points_aftertest:
                 if point.get_category() == "outside":
-                    writer.writerow([point.get_name(), "outside"])
+                    f.write(point.get_name() + "," + "outside" + "\n")
                 if point.get_category() == "inside":
-                    writer.writerow([point.get_name(), "inside"])
+                    f.write(point.get_name() + "," + "inside" + "\n")
                 if point.get_category() == "boundary":
-                    writer.writerow([point.get_name(), "boundary"])
+                    f.write(point.get_name() + "," + "boundary" + "\n")
 
 
 class Extractor:
+    # Extract x-coordinates and y-coordinates of the polygon.
     def extract_polygon(self, polygon_set, name):
         x_polygon = []
         y_polygon = []
@@ -168,8 +186,9 @@ class Extractor:
         if name == "ys":
             return y_polygon
 
+    # Extract x-coordinates and y-coordinates of points after PiP test.
+    # Return coordinates based on category of each point.
     def extract_point(self, points_aftertest, category, name):
-
         x_outside_list = []
         y_outside_list = []
         x_inside_list = []
@@ -200,6 +219,8 @@ class Extractor:
             return y_boundary_list
 
 
+# Run the Point-in-Polygon Test and plot polygon and points.
+# Pass the file path the output file name as arguments to the function.
 def main(filepath, outputname):
     plotter = Plotter()
 
@@ -215,27 +236,29 @@ def main(filepath, outputname):
     points_aftertest = judgement.pip_test(point_set, polygon_set)
 
     print("write output.csv")
-    write_file = file.write_file(point_set, polygon_set, filepath, outputname)
+    write_file = file.write_file(points_aftertest, filepath, outputname)
 
     print("plot polygon and points")
     x_polygon = Extractor().extract_polygon(polygon_set, "xs")
     y_polygon = Extractor().extract_polygon(polygon_set, "ys")
     plotter.add_polygon(x_polygon, y_polygon)
 
-    x_outside_list = Extractor().extract_point(point_set, polygon_set, "outside", "xs")
-    y_outside_list = Extractor().extract_point(point_set, polygon_set, "outside", "ys")
+    x_outside_list = Extractor().extract_point(points_aftertest, "outside", "xs")
+    y_outside_list = Extractor().extract_point(points_aftertest, "outside", "ys")
     plotter.add_point(x_outside_list, y_outside_list, "outside")
 
-    x_inside_list = Extractor().extract_point(point_set, polygon_set, "inside", "xs")
-    y_inside_list = Extractor().extract_point(point_set, polygon_set, "inside", "ys")
+    x_inside_list = Extractor().extract_point(points_aftertest, "inside", "xs")
+    y_inside_list = Extractor().extract_point(points_aftertest, "inside", "ys")
     plotter.add_point(x_inside_list, y_inside_list, "inside")
 
-    x_boundary_list = Extractor().extract_point(point_set, polygon_set, "boundary", "xs")
-    y_boundary_list = Extractor().extract_point(point_set, polygon_set, "boundary", "ys")
+    x_boundary_list = Extractor().extract_point(points_aftertest, "boundary", "xs")
+    y_boundary_list = Extractor().extract_point(points_aftertest, "boundary", "ys")
     plotter.add_point(x_boundary_list, y_boundary_list, "boundary")
 
     plotter.show()
 
 
 if __name__ == "__main__":
-    main("D:/Pycharm/Python第一次作业", "output.csv")
+    # Use os.getcwd() function to get current work directory.
+    # (Source: GeeksforGeeks. 2019. https://www.geeksforgeeks.org/python-os-getcwd-method/)
+    main(os.getcwd(), "output.csv")
