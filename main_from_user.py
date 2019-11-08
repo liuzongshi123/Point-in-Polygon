@@ -1,4 +1,4 @@
-import csv
+import argparse
 from plotter import Plotter
 
 
@@ -158,31 +158,14 @@ class File:
                 pointlist.append(point1)
         return pointlist
 
-
     # Read tuple_pairs given by user, return point set.
     def read_from_user(self, tuple_pairs):
-        # Use eval() function to extract point set given by user.
-        # (Source: Programiz. 2019. https://www.programiz.com/python-programming/methods/built-in/eval)
-        points = eval(tuple_pairs)
-        # If user type in wrong way, ask user type again.
-        # (Source: Programiz. 2019. https://www.programiz.com/python-programming/methods/built-in/isinstance)
-        while isinstance(points, tuple) is False:
-            print("Type in wrong way! Please try again!")
-            points = eval(input("Please enter the points: "))
+        points = tuple_pairs.split("(")
         pointslist = []
-        # Get point set if user type more than one point.
-        if isinstance(points[0], tuple):
-            for i in range(len(points)):
-                id_num = i
-                x = float(points[i][0])
-                y = float(points[i][1])
-                point = Point(id_num, x, y)
-                pointslist.append(point)
-        # Get point set if user type only one point.
-        else:
-            id_num = 0
-            x = float(points[0])
-            y = float(points[1])
+        for i in points[1:]:
+            id_num = i
+            x = float(i[0])
+            y = float(i[2])
             point = Point(id_num, x, y)
             pointslist.append(point)
         return pointslist
@@ -200,7 +183,7 @@ class File:
                 print("point" + str(point) + ": on the boundary" + "\n")
 
 
-class Extractor:
+class PlotterAssistant:
     # Extract x-coordinates and y-coordinates of the polygon.
     def extract_polygon(self, polylist, name):
         x_polygon = []
@@ -264,33 +247,48 @@ def main(tuple_pairs):
     file.print_on_screen(point_aftertest)
 
     print("plot polygon and points")
-    x_polygon = Extractor().extract_polygon(polygon_set, "xs")
-    y_polygon = Extractor().extract_polygon(polygon_set, "ys")
+    x_polygon = PlotterAssistant().extract_polygon(polygon_set, "xs")
+    y_polygon = PlotterAssistant().extract_polygon(polygon_set, "ys")
     plotter.add_polygon(x_polygon, y_polygon)
 
     # Plot points based on category of each point
-    x_outside_list = Extractor().extract_point(point_aftertest, "outside", "xs")
-    y_outside_list = Extractor().extract_point(point_aftertest, "outside", "ys")
+    x_outside_list = PlotterAssistant().extract_point(point_aftertest, "outside", "xs")
+    y_outside_list = PlotterAssistant().extract_point(point_aftertest, "outside", "ys")
     plotter.add_point(x_outside_list, y_outside_list, "outside")
 
-    x_inside_list = Extractor().extract_point(point_aftertest, "inside", "xs")
-    y_inside_list = Extractor().extract_point(point_aftertest, "inside", "ys")
+    x_inside_list = PlotterAssistant().extract_point(point_aftertest, "inside", "xs")
+    y_inside_list = PlotterAssistant().extract_point(point_aftertest, "inside", "ys")
     plotter.add_point(x_inside_list, y_inside_list, "inside")
 
-    x_boundary_list = Extractor().extract_point(point_aftertest, "boundary", "xs")
-    y_boundary_list = Extractor().extract_point(point_aftertest, "boundary", "ys")
+    x_boundary_list = PlotterAssistant().extract_point(point_aftertest, "boundary", "xs")
+    y_boundary_list = PlotterAssistant().extract_point(point_aftertest, "boundary", "ys")
     plotter.add_point(x_boundary_list, y_boundary_list, "boundary")
 
     plotter.show()
 
 
-if __name__ == "__main__":
-    print("Welcome to Zongshi's Point-in-Polygon Test! \n"
-          "Remember! The coordinates you given should follow the structure:\n"
-          "(x1,y1), (x2,y2), (x3,y3), (x4,y4).......\n"
-          "The result will be shown by following structure: \n"
-          "point(x1, y1): outside the polygon.\n"
-          "point(x2, y2): inside the polygon.\n"
-          "point(x3, y3): on the boundary.\n")
+# Use "argparse" library to get argument.
+# (Source: Codelog. 2019. https://codeday.me/bug/20190429/1003501.html)
+parser = argparse.ArgumentParser(description="Welcome to Zongshi's Point-in-Polygon Test! \n"
+                                             "Please enter the points as tuple pairs as argument\n"
+                                             "Remember! The coordinates you given should follow the structure:\n"
+                                             "(x1,y1)(x2,y2)(x3,y3)(x4,y4).......\n"
+                                             "The result will be shown by following structure: \n"
+                                             "point(x1, y1): outside the polygon.\n"
+                                             "point(x2, y2): inside the polygon.\n"
+                                             "point(x3, y3): on the boundary.\n")
+# Get "tuple_pairs" argument.
+parser.add_argument("tuple_pairs",
+                    help="tuple_pairs, required arguments")
+args = parser.parse_args()
 
-    main(input("Please enter the points: "))
+
+if __name__ == "__main__":
+    # Run program, print wrong message when program do not work.
+    try:
+        main(args.tuple_pairs)
+    except Exception as e:
+        print(e)
+
+
+
