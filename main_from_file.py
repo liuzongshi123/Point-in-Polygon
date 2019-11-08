@@ -1,5 +1,5 @@
+import argparse
 import os
-import csv
 from plotter import Plotter
 
 
@@ -173,7 +173,7 @@ class File:
                     f.write(point.get_name() + "," + "boundary" + "\n")
 
 
-class Extractor:
+class PlotterAssistant:
     # Extract x-coordinates and y-coordinates of the polygon.
     def extract_polygon(self, polygon_set, name):
         x_polygon = []
@@ -239,26 +239,45 @@ def main(filepath, outputname):
     write_file = file.write_file(points_aftertest, filepath, outputname)
 
     print("plot polygon and points")
-    x_polygon = Extractor().extract_polygon(polygon_set, "xs")
-    y_polygon = Extractor().extract_polygon(polygon_set, "ys")
+    x_polygon = PlotterAssistant().extract_polygon(polygon_set, "xs")
+    y_polygon = PlotterAssistant().extract_polygon(polygon_set, "ys")
     plotter.add_polygon(x_polygon, y_polygon)
 
-    x_outside_list = Extractor().extract_point(points_aftertest, "outside", "xs")
-    y_outside_list = Extractor().extract_point(points_aftertest, "outside", "ys")
+    x_outside_list = PlotterAssistant().extract_point(points_aftertest, "outside", "xs")
+    y_outside_list = PlotterAssistant().extract_point(points_aftertest, "outside", "ys")
     plotter.add_point(x_outside_list, y_outside_list, "outside")
 
-    x_inside_list = Extractor().extract_point(points_aftertest, "inside", "xs")
-    y_inside_list = Extractor().extract_point(points_aftertest, "inside", "ys")
+    x_inside_list = PlotterAssistant().extract_point(points_aftertest, "inside", "xs")
+    y_inside_list = PlotterAssistant().extract_point(points_aftertest, "inside", "ys")
     plotter.add_point(x_inside_list, y_inside_list, "inside")
 
-    x_boundary_list = Extractor().extract_point(points_aftertest, "boundary", "xs")
-    y_boundary_list = Extractor().extract_point(points_aftertest, "boundary", "ys")
+    x_boundary_list = PlotterAssistant().extract_point(points_aftertest, "boundary", "xs")
+    y_boundary_list = PlotterAssistant().extract_point(points_aftertest, "boundary", "ys")
     plotter.add_point(x_boundary_list, y_boundary_list, "boundary")
 
     plotter.show()
 
+# Use "os" library to get current work directory
+# (Source: GeeksforGeeks. 2019. https://www.geeksforgeeks.org/python-os-getcwd-method/)
+current_work_directory = os.getcwd()
+# Use "argparse" library to get two arguments
+# (Source: Codelog. 2019. https://codeday.me/bug/20190429/1003501.html)
+parser = argparse.ArgumentParser(description="Welcome to Zongshi's Point-in-Polygon Test! \n"
+                                             "Please enter file path and output name as arguments")
+# Get "filepath" argument
+parser.add_argument("-f", "--filepath",
+                    help="filepath, optional arguments, default is current work directory",
+                    default=current_work_directory)
+# Get "outputname" argument, default value is "output.csv".
+parser.add_argument("-n", "--outputname",
+                    help="outputname, optional arguments, default is output.csv",
+                    default="output.csv")
+args = parser.parse_args()
 
 if __name__ == "__main__":
-    # Use os.getcwd() function to get current work directory.
-    # (Source: GeeksforGeeks. 2019. https://www.geeksforgeeks.org/python-os-getcwd-method/)
-    main(os.getcwd(), "output.csv")
+    # Run program, print wrong message when program do not work.
+    try:
+        # Set default value of "filepath" argument to current work directory
+        main(args.filepath, args.outputname)
+    except Exception as e:
+        print(e)
