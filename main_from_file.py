@@ -264,7 +264,7 @@ current_work_directory = os.getcwd()
 # (Source: Codelog. 2019. https://codeday.me/bug/20190429/1003501.html)
 parser = argparse.ArgumentParser(description="Welcome to Zongshi's Point-in-Polygon Test! \n"
                                              "Please enter file path and output name as arguments")
-# Get "filepath" argument
+# Get "filepath" argument, default value is current work directory.
 parser.add_argument("-f", "--filepath",
                     help="filepath, optional arguments, default is current work directory",
                     default=current_work_directory)
@@ -277,7 +277,6 @@ args = parser.parse_args()
 if __name__ == "__main__":
     # Run program, print wrong message when program do not work.
     try:
-        # Set default value of "filepath" argument to current work directory
         main(args.filepath, args.outputname)
     except Exception as e:
         print(e)
