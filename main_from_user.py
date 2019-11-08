@@ -160,15 +160,29 @@ class File:
                 pointlist.append(point1)
         return pointlist
 
-
     # Read tuple_pairs given by user, return point set.
     def read_from_user(self, tuple_pairs):
-        points = tuple_pairs.split("(")
+        # Use eval() function to extract point set given by user.
+        # (Source: Programiz. 2019. https://www.programiz.com/python-programming/methods/built-in/eval)
+        points = eval(tuple_pairs)
+        # If user type in wrong way, ask user type again.
+        if Exception:
+            print("Type in wrong way! Please try again!")
         pointslist = []
-        for i in points[1:]:
-            id_num = i
-            x = float(i[0])
-            y = float(i[2])
+        # Get point set if user type more than one point by using isinstance() function.
+        # (Source: Programiz. 2019. https://www.programiz.com/python-programming/methods/built-in/isinstance)
+        if isinstance(points[0], tuple):
+            for i in range(len(points)):
+                id_num = i
+                x = float(points[i][0])
+                y = float(points[i][1])
+                point = Point(id_num, x, y)
+                pointslist.append(point)
+        # Get point set if user type only one point.
+        else:
+            id_num = 0
+            x = float(points[0])
+            y = float(points[1])
             point = Point(id_num, x, y)
             pointslist.append(point)
         return pointslist
@@ -278,7 +292,7 @@ current_work_directory = os.getcwd()
 parser = argparse.ArgumentParser(description="Welcome to Zongshi's Point-in-Polygon Test! \n"
                                              "Please enter the points as tuple pairs as argument\n"
                                              "Remember! The coordinates you given should follow the structure:\n"
-                                             "(x1,y1)(x2,y2)(x3,y3)(x4,y4).......\n"
+                                             "(x1,y1),(x2,y2),(x3,y3),(x4,y4).......\n"
                                              "The result will be shown by following structure: \n"
                                              "point(x1, y1): outside the polygon.\n"
                                              "point(x2, y2): inside the polygon.\n"
