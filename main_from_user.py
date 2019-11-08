@@ -1,4 +1,5 @@
 import argparse
+import os
 from plotter import Plotter
 
 
@@ -145,9 +146,10 @@ class Judgement:
 
 
 class File:
-    # Read file by using "DictReader" function, return point set.
-    def read_file(self, filename=""):
-        with open(filename, "r") as f:
+    # Read file and return point set.
+    # Pass file path as an argument to the function.
+    def read_file(self, filepath, filename):
+        with open(filepath + "/" + filename, "r") as f:
             pointlist = []
             for i in f.readlines()[1:]:
                 point = i.split(",")
@@ -157,6 +159,7 @@ class File:
                 point1 = Point(id, x, y)
                 pointlist.append(point1)
         return pointlist
+
 
     # Read tuple_pairs given by user, return point set.
     def read_from_user(self, tuple_pairs):
@@ -230,13 +233,13 @@ class PlotterAssistant:
 
 
 # Run the Point-in-Polygon Test and plot polygon and points.
-# Pass a tuple pairs given by user as an argument to the function.
-def main(tuple_pairs):
+# Pass file path and tuple pairs given by user as arguments to the function.
+def main(filepath, tuple_pairs):
     plotter = Plotter()
 
     print("read polygon.csv")
     file = File()
-    polygon_set = file.read_file("polygon.csv")
+    polygon_set = file.read_file(filepath, "polygon.csv")
 
     print("Insert point information")
     point_set = file.read_from_user(tuple_pairs)
@@ -267,6 +270,9 @@ def main(tuple_pairs):
     plotter.show()
 
 
+# Use "os" library to get current work directory
+# (Source: GeeksforGeeks. 2019. https://www.geeksforgeeks.org/python-os-getcwd-method/)
+current_work_directory = os.getcwd()
 # Use "argparse" library to get argument.
 # (Source: Codelog. 2019. https://codeday.me/bug/20190429/1003501.html)
 parser = argparse.ArgumentParser(description="Welcome to Zongshi's Point-in-Polygon Test! \n"
@@ -280,13 +286,17 @@ parser = argparse.ArgumentParser(description="Welcome to Zongshi's Point-in-Poly
 # Get "tuple_pairs" argument.
 parser.add_argument("tuple_pairs",
                     help="tuple_pairs, required arguments")
+# Get "filepath" argument, default value is current work directory.
+parser.add_argument("-f", "--filepath",
+                    help="filepath, optional arguments, default is current work directory",
+                    default=current_work_directory)
 args = parser.parse_args()
 
 
 if __name__ == "__main__":
     # Run program, print wrong message when program do not work.
     try:
-        main(args.tuple_pairs)
+        main(args.filepath, args.tuple_pairs)
     except Exception as e:
         print(e)
 
